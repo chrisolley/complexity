@@ -172,16 +172,18 @@ class SystemIterator(System):
        
         # iterates the system
         for s in system:
+            print('\r Iterating system of size: {}'.format(s.L), end="")
             # populates avalanche size array
             self.avalanche_sizes.append(len(s.relaxed_sites))
             # populating height history arrays
             self.height_hist.append(s.h[0])
             #self.h1_hist.append(s.h[0]) 
         
-        # remove the end of the temporally smoothed height for edge effects
+        # define a temporally smoothed height
         self.processed_height = np.convolve(self.height_hist, 
                                             np.ones((2 * self.W + 1,)) / (2 * self.W + 1), 
                                             mode='same')
+        # remove the end of the temporally smoothed height for edge effects
         self.processed_height = self.processed_height[:-2*self.W]
         # define a scaled total iteration number N/L^2
         self.N_scaled = [a / (system.L**2 ) for a in range(len(self.processed_height))]        
@@ -189,14 +191,12 @@ class SystemIterator(System):
         self.height_hist_scaled = [i / system.L for i in self.processed_height]
         # scale the avalanche sizes
         self.avalanche_sizes_scaled = [i / max(self.avalanche_sizes) for i in self.avalanche_sizes]
-        # define a temporally smoothed height
-
-        
-
         # define the mean gradient across the system once iteration complete
         self.z_mean = sum(system.z) / len(system.z)
         # define the theoretical cross over time 
         self.t_c_theory = (self.z_mean / 2) * system.L**2 * (1 + 1. / system.L)
+        # slice the avalanche time series, keeping only the recurrent phase avalanche sizes
+        self.recurrent_s = self.avalanche_sizes[system.t_c:]
         # slice the heights time series, keeping only the recurrent heights
         self.recurrent_h = self.height_hist[system.t_c:]
         # mean recurrent configuration height
@@ -205,12 +205,19 @@ class SystemIterator(System):
         self.mean_square_h = sum(i**2 for i in self.recurrent_h) / len(self.recurrent_h)
         # standard deviation of recurrent configuration height
         self.sd_h = np.sqrt(self.mean_square_h - self.recurrent_mean_h**2)
-        self.prob_dist = []
+        # array of the probability distribution of different configuration heights
+        # in the recurrent phase
+        self.height_prob_dist = []
+        self.s_prob_dist = []
+        for i in range(int(min(self.recurrent_h)), int(max(self.recurrent_h))):
+            self.height_prob_dist.append(self.height_prob(i))
+        for i in range(int(min(self.recurrent_s)), int(max(self.recurrent_s))):
+            self.s_prob_dist.append(self.avalanche_prob(i))
         
         
-    def prob(self, h): 
+    def height_prob(self, h): 
         '''
-        prob: Observed probability of a system height h in the recurrent phase.
+        height_prob: Observed probability of a system height h in the recurrent phase.
         Args: 
             h: height to find probability of. 
         Return: 
@@ -221,10 +228,24 @@ class SystemIterator(System):
         self.probability = self.n / len(self.recurrent_h) # observed probability
         
         return self.probability
+    
+    def avalanche_prob(self, s):
+        '''
+        avalanche_prob: Observed probability of a system avalanche size s in the recurrent phase.
+        Args: 
+            s: avalanche size to find probability of.
+        Return: 
+            probability: P(s) in recurrent phase.
+        '''
+        
+        self.n = self.recurrent_s.count(s) # counts number of instances of s
+        self.probability = self.n / len(self.recurrent_s) # observed probability
+        
+        return self.probability
         
 if __name__ == "__main__":
     
-    L = 32
+    L = 64
     
     
     system = System(L)
@@ -234,19 +255,15 @@ if __name__ == "__main__":
     print('Run time for L={}: {} s.'.format(L, (end-start)))
     print('Number of cycles for L={}: {}.'.format(L, system.cycle))
     print("Cross-over time: {}".format(system.t_c))
+    print("Max avalanche size: {}".format(max(systemiterator.avalanche_sizes)))
     print("Average slope <z>: {}".format(systemiterator.z_mean))
     print("Average height of site 1 in transient phase: {}".format(systemiterator.recurrent_mean_h))
     print("S.D of height of site 1 in transient phase: {}".format(systemiterator.sd_h))
-    print("Probability of heights 1-32: ")
-    probdist = []
-    for i in range(70): 
-        probdist.append(systemiterator.prob(i))
-    
-    print(sum(probdist))
+    print("Sum of probability of heights: ")
+    print(sum(systemiterator.height_prob_dist))
     
     fig2, ax2 = plt.subplots()
     ax2.plot(range(len(system.h)), system.h, marker='.')
-    
     ax2.grid()
     
     fig3, ax3 = plt.subplots()
@@ -263,4 +280,12 @@ if __name__ == "__main__":
     ax5.plot(range(len(systemiterator.processed_height)), systemiterator.processed_height)
     ax5.grid()
     ax5.axvline(system.t_c, color='red')
+    
+    fig6, ax6 = plt.subplots()
+    ax6.plot(range(int(min(systemiterator.recurrent_h)), int(max(systemiterator.recurrent_h))), systemiterator.height_prob_dist)
+    ax6.grid()
+    
+    fig7, ax7 = plt.subplots()
+    ax7.loglog(range(int(min(systemiterator.recurrent_s)), int(max(systemiterator.recurrent_s))), systemiterator.s_prob_dist)
+    ax7.grid()
     plt.show()

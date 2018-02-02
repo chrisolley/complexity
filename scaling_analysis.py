@@ -3,7 +3,7 @@ import oslo as oslo
 import matplotlib.pyplot as plt
 
 #N = 6000
-L = [4, 6, 8, 16, 32, 64]#, 128, 256]
+L = [8, 16, 32, 64, 128]
 
 # array of system objects for different sizes
 systems = [oslo.System(l) for l in L]
