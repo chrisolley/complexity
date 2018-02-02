@@ -12,8 +12,8 @@ systemiterators = [oslo.SystemIterator(s) for s in systems]
 t_c = [s.t_c for s in systems]
 t_c_theory = [s.t_c_theory for s in systemiterators]
 
-transient_mean_h1 = [s.transient_mean_h1 for s in systemiterators]
-sd_h1 = [s.sd_h1 for s in systemiterators]
+recurrent_mean_h = [s.recurrent_mean_h for s in systemiterators]
+sd_h = [s.sd_h for s in systemiterators]
 
 fig1, ax1 = plt.subplots()
 ax1.plot(L, t_c, label = 'Observed')
@@ -24,13 +24,13 @@ ax1.legend(loc='best')
 ax1.grid()
 
 fig2, ax2 = plt.subplots()
-ax2.plot(L, transient_mean_h1)
+ax2.plot(L, recurrent_mean_h)
 ax2.set_xlabel('System Size, L')
-ax2.set_ylabel('Transient Average Height')
+ax2.set_ylabel('Recurrent System Average Height')
 ax2.grid()
 
 fig3, ax3 = plt.subplots()
-ax3.plot(L, sd_h1, linestyle='', marker='.')
+ax3.plot(L, sd_h, linestyle='', marker='.')
 ax3.set_xlabel('System Size, L')
 ax3.set_ylabel('Standard Deviation of Height')
 ax3.grid()

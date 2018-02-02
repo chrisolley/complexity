@@ -24,17 +24,17 @@ fig4, ax4 = plt.subplots()
 ax4.grid()
 
 for i, s in enumerate(systemiterators):
-    ax2.plot(range(systems[i].N), s.total_height_hist, label=L[i])
+    ax2.plot(range(len(s.processed_height)), s.processed_height, label=L[i])
     ax2.set_xlabel('t')
     ax2.set_ylabel('h')
     ax2.legend(loc='best')
     
-    ax3.plot(range(systems[i].N), s.total_height_hist_scaled, label=L[i])
+    ax3.plot(range(len(s.processed_height)), s.height_hist_scaled, label=L[i])
     ax3.set_xlabel('t')
     ax3.set_ylabel('h/L')
     ax3.legend(loc='best')
     
-    ax4.plot(s.N_scaled, s.total_height_hist_scaled, label=L[i])
+    ax4.plot(s.N_scaled, s.height_hist_scaled, label=L[i])
     ax4.set_ylabel('h/L')
     ax4.set_xlabel('t/L^2')
     ax4.legend(loc='best')

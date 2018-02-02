@@ -6,37 +6,63 @@ from timeit import default_timer as timer
 
 class System:
     '''
-    System class for given Oslo model lattice.
+    System class for the Oslo model system. 
     '''
     
     def __init__(self, L, p=0.5): 
-        self.L = L           
-        self.p = p
-        self.zth = [self.set_thr() for i in range(L)]
-        self.z = np.zeros(L)
-        self.h = np.zeros(L)
-        self.total_height = 0
-        self.t_c_flag = False
-        self.count = 0 # counting number of iterations
-        self.cycle = 0
+        
+        '''
+        Initialises an Oslo Model System
+        
+        Args: 
+            L: system size e.g. number of sites. 
+            p: probability used to set threshold values. Default 0.5.
+        '''
+        
+        self.L = L 
+        self.p = p # probability of seting a threshold value of 1
+        self.z = np.zeros(L) # array to hold value of gradient at each site
+        self.h = np.zeros(L) # array to hold value of height at each site
+        #self.total_height = 0 # total height
+        
+        self.t_c_flag = False # boolean to remember if the system has reached recurrent phase
+        self.count = 0 # counting number of drive phases
+        self.cycle = 0 # counting number of relaxations
+        
+        self.zth = [self.set_thr() for i in range(L)] # set the threshold values
         
     def __iter__(self):
+        '''
+        Carries out the __next__ method.
+        '''
         return self
     
     def __next__(self):
+        '''
+        Defines the iteration behaviour of the model.
+        '''
         
-        if self.t_c_flag == True:
-            if self.count >= self.N:
+        # Defines the condition for stopping the iteration: i.e. if number of
+        # iterations reaches N, set to be 1000 iterations after cross over.
+        
+        if self.t_c_flag == True: 
+            if self.count >= self.N: 
                 raise StopIteration
         
-        self.count += 1
-        self.drive()
-        self.relax()
+        self.count += 1 # increment number of iterations
+        self.drive() # drive phase
+        self.relax() # relaxation phase
         
         return self
         
     def set_thr(self):
-        '''Initialises threshold values'''
+        '''
+        set_thr: randomly initialises model's site threshold values.
+        Args:
+            p: probability of setting threshold value to 1. (1-p): P(2).
+        Return:
+            1 or 2 depending on threshold value produced.
+        '''
          
         if rdm.uniform(0,1) < self.p: 
             return 1
@@ -44,128 +70,161 @@ class System:
             return 2
     
     def drive(self):
+        '''
+        drive: carries out drive phase of the oslo model. 
+        '''
         
-        print("Adding a grain")
-        self.z[0] += 1
-        self.h[0] += 1
-        self.total_height += 1
+        self.z[0] += 1 # increments gradient of site 1
+        self.h[0] += 1 # increments height of site 1
+        #self.total_height += 1
         
     def relax(self):
+        '''
+        relax: carries out relaxation phase of the oslo model. 
+        '''
         
-        relax = True # carry out initial check for relaxation
-        self.relaxed_sites = []
+        # relax: boolean that determines if relaxation should occur
+        relax = True # assume that relaxation should occur
+        self.relaxed_sites = [] # array to store sites which relaxed in this relaxation phase
+        
+        # loop over all sites to check for relaxation unless relax is set to False
         while relax == True:
             
-            relax = False # assume no relaxation has occured 
+            relax = False # no relaxation has occured yet so no need to check again
             
+            # loop over all sites 
             for i in range(self.L):
 
+                # check first site
                 if i == 0:  
-                    # check first site
-                    print("Checking site: {}".format(i))
-                    if self.z[0] > self.zth[0]: # is gradient above threshold?
-                        print("Relaxed")
-                        self.z[0] -= 2
-                        self.z[1] += 1
+                    if self.z[0] > self.zth[0]: # check if gradient above threshold
                         
-                        self.h[0] -= 1
+                        self.z[0] -= 2 # increment gradients of required sites
+                        self.z[1] += 1 
+                        
+                        self.h[0] -= 1 # increment heights of required sites
                         self.h[1] += 1
-                        self.relaxed_sites.append(0) # store which sites have relaxed
+
+                        self.relaxed_sites.append(0) # store which site has relaxed
+                        
                         self.zth[0] = self.set_thr() # assign new threshold value
-                        self.total_height -= 1
                         relax = True # relaxation has occured
-                        self.cycle += 1
-                    
-                
-                    # only check rest of sites if 1st site has relaxed    
+                        self.cycle += 1 # increment relaxation phase counter
 
-                #relax = False # assume no relaxation has occured 
-
-
-                # check all other sites
+                # check all other sites except the last site
                 if i != 0 and i != self.L - 1:
-                    print("Checking site: {}".format(i))
-                    if self.z[i] > self.zth[i]: # is gradient above threshold?
-                        print("Relaxed")
-                        self.z[i] -= 2
-                        self.z  [i - 1] += 1
+                    if self.z[i] > self.zth[i]: # check if gradient above threshold
+
+                        self.z[i] -= 2 # increment gradients of required sites
+                        self.z[i - 1] += 1
                         self.z[i + 1] += 1
                         
-                        self.h[i] -= 1
+                        self.h[i] -= 1 # increment heights of required sites
                         self.h[i + 1] += 1
-                        self.relaxed_sites.append(i) # store which sites have relaxed
+                              
+                        self.relaxed_sites.append(i) # store which site has relaxed
+                        
                         self.zth[i] = self.set_thr() # assign new threshold value
                         relax = True # relaxation has occured
-                        self.cycle += 1
+                        self.cycle += 1 # increment relaxation phase counter
                         
                 # check last site                      
                 if i == self.L - 1:
-                    print("Checking site: {}".format(i))
-                    if self.z[self.L - 1] > self.zth[self.L - 1]: # is gradient above threshold?
-                        print("Relaxed")
-                        self.z[self.L - 1] -= 1
+                    if self.z[self.L - 1] > self.zth[self.L - 1]: # check if gradient above threshold
+
+                        self.z[self.L - 1] -= 1 # increment gradients of required sites
                         self.z[self.L - 2] += 1
                         
-                        self.h[self.L - 1] -= 1
-                        self.relaxed_sites.append(i) # store which sites have relaxed
-                        self.zth[self.L - 1] = self.set_thr() # assign new threshold value
+                        self.h[self.L - 1] -= 1 # increment heights of required sites
+                              
+                        self.relaxed_sites.append(i) # store which site has relaxed
+                        
+                        self.zth[self.L - 1] = self.set_thr() # assign new threshold values
                         relax = True # relaxation has occured
-                        self.cycle += 1
+                        self.cycle += 1 # increment relaxation phase counter
+                        
                         
                         if self.t_c_flag == False:
+                            # if cross over hasn't already occured, store the current iteration value
                             self.t_c = self.count
-                            self.N = self.t_c + 1000
-                            
+                            # set the total iteration number to the cross over time + 1000 iterations
+                            self.N = self.t_c + 10000
                             self.t_c_flag = True # cross over has occured                        
-                        # total height of pile only decreases if last site relaxes
-                        #total_height -= 1 
-                        
-#                    else: 
-#                        continue
+                            
                         
 class SystemIterator(System): 
-    ''' Defines iteration behaviour for a system '''
+    '''
+    Class to iterate a system created by the System class.
+    '''
     
     def __init__(self, system, W=25): 
-        self.avalanche_sizes = []
-        self.total_height_hist = []
-        self.W = W
-        self.h1_hist = []
+        '''
+        Initialises the SystemIterator.
+        Args: 
+            system: a System object.
+            W: size of temporal smoothing window.
+        '''
+        
+        self.avalanche_sizes = [] # array to store the sizes of avalanches observed
+        self.height_hist = [] # array to store the evolution o the height of the pile
+        self.W = W # size of temporal smoothing window
+        #self.h1_hist = []
        
-        
+        # iterates the system
         for s in system:
+            # populates avalanche size array
             self.avalanche_sizes.append(len(s.relaxed_sites))
-            self.total_height_hist.append(s.total_height)
-            self.h1_hist.append(s.h[0]) 
+            # populating height history arrays
+            self.height_hist.append(s.h[0])
+            #self.h1_hist.append(s.h[0]) 
         
-        self.N_scaled = [a / (1.2 * system.L**2 ) for a in range(system.N)]        
-        self.processed_height = np.convolve(self.total_height_hist, 
-                                            np.ones((2 * self.W + 1,)) / (2 * self.W + 1)   , 
+        # remove the end of the temporally smoothed height for edge effects
+        self.processed_height = np.convolve(self.height_hist, 
+                                            np.ones((2 * self.W + 1,)) / (2 * self.W + 1), 
                                             mode='same')
-        
         self.processed_height = self.processed_height[:-2*self.W]
-        self.z_mean = sum(system.z) / len(system.z)
-
-        self.total_height_hist_scaled = [i / system.L for i in self.total_height_hist]
+        # define a scaled total iteration number N/L^2
+        self.N_scaled = [a / (system.L**2 ) for a in range(len(self.processed_height))]        
+        # define a scaled height history h/L
+        self.height_hist_scaled = [i / system.L for i in self.processed_height]
+        # scale the avalanche sizes
         self.avalanche_sizes_scaled = [i / max(self.avalanche_sizes) for i in self.avalanche_sizes]
+        # define a temporally smoothed height
+
+        
+
+        # define the mean gradient across the system once iteration complete
+        self.z_mean = sum(system.z) / len(system.z)
+        # define the theoretical cross over time 
         self.t_c_theory = (self.z_mean / 2) * system.L**2 * (1 + 1. / system.L)
-        self.transient_h1 = self.h1_hist[system.t_c:]
-        self.transient_mean_h1 = sum(self.transient_h1) / len(self.transient_h1)
-        self.mean_square_h1 = sum(i**2 for i in self.transient_h1) / len(self.transient_h1)
-        self.sd_h1 = np.sqrt(self.mean_square_h1 - self.transient_mean_h1**2)
+        # slice the heights time series, keeping only the recurrent heights
+        self.recurrent_h = self.height_hist[system.t_c:]
+        # mean recurrent configuration height
+        self.recurrent_mean_h = sum(self.recurrent_h) / len(self.recurrent_h)
+        # mean square recurrent configuration height
+        self.mean_square_h = sum(i**2 for i in self.recurrent_h) / len(self.recurrent_h)
+        # standard deviation of recurrent configuration height
+        self.sd_h = np.sqrt(self.mean_square_h - self.recurrent_mean_h**2)
         self.prob_dist = []
         
         
     def prob(self, h): 
-        '''Observed probability of a system height h'''
+        '''
+        prob: Observed probability of a system height h in the recurrent phase.
+        Args: 
+            h: height to find probability of. 
+        Return: 
+            probability: P(h) in recurrent phase. 
+        '''
         
-        self.n = self.transient_h1.count(h)
-        self.probability = self.n/len(self.transient_h1)
+        self.n = self.recurrent_h.count(h) # counts number of instances of h
+        self.probability = self.n / len(self.recurrent_h) # observed probability
+        
         return self.probability
         
 if __name__ == "__main__":
     
-    L = 8
+    L = 32
     
     
     system = System(L)
@@ -176,9 +235,9 @@ if __name__ == "__main__":
     print('Number of cycles for L={}: {}.'.format(L, system.cycle))
     print("Cross-over time: {}".format(system.t_c))
     print("Average slope <z>: {}".format(systemiterator.z_mean))
-    print("Average height of site 1 in transient phase: {}".format(systemiterator.transient_mean_h1))
-    print("S.D of height of site 1 in transient phase: {}".format(systemiterator.sd_h1))
-    print("Probability of heights 1-32: ")  
+    print("Average height of site 1 in transient phase: {}".format(systemiterator.recurrent_mean_h))
+    print("S.D of height of site 1 in transient phase: {}".format(systemiterator.sd_h))
+    print("Probability of heights 1-32: ")
     probdist = []
     for i in range(70): 
         probdist.append(systemiterator.prob(i))
@@ -196,7 +255,7 @@ if __name__ == "__main__":
     ax3.grid()
     
     fig4, ax4 = plt.subplots()
-    ax4.plot(range(system.N), systemiterator.total_height_hist)
+    ax4.plot(range(system.N), systemiterator.height_hist)
     ax4.axvline(system.t_c, color='red')
     ax4.grid()
 
