@@ -14,7 +14,8 @@ prob_dist = [s.height_prob_dist for s in systemiterators]
 fig1, ax1 = plt.subplots()
 
 for i, p in enumerate(prob_dist): 
-    ax1.plot(range(int(min(systemiterators[i].recurrent_h)), int(max(systemiterators[i].recurrent_h))), p, label='L: {}'.format(L[i]))
+    ax1.plot(range(int(min(systemiterators[i].recurrent_h)), int(max(systemiterators[i].recurrent_h))), 
+             p, label='L: {}'.format(L[i]))
 
 ax1.grid()
 ax1.legend(loc='best')

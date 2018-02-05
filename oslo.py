@@ -2,6 +2,7 @@
 import numpy as np
 import random as rdm
 import matplotlib.pyplot as plt
+import logbin18 as lb
 from timeit import default_timer as timer
 
 class System:
@@ -214,6 +215,8 @@ class SystemIterator(System):
         for i in range(int(min(self.recurrent_s)), int(max(self.recurrent_s))):
             self.s_prob_dist.append(self.avalanche_prob(i))
         
+        self.s_prob_dist_log_bin = self.avalanche_prob_log_bin()
+    
         
     def height_prob(self, h): 
         '''
@@ -242,11 +245,27 @@ class SystemIterator(System):
         self.probability = self.n / len(self.recurrent_s) # observed probability
         
         return self.probability
+    
+    def avalanche_prob_log_bin(self):
+        '''
+        avalanche_prob_log_bin: Log binned probability distribution of the system
+        avalanche sizes in the recurrent state.
+        Returns: 
+            x: Array of coordinates for bin centres calculated using geometric 
+            mean of bin edges.
+            y: Normalised array of frequency couns within each bin.
+        
+        '''
+        self.s_log_bin = lb.logbin(self.recurrent_s, scale=1.4, zeros=True)
+        
+        x = self.s_log_bin[0]
+        y = [i / len(self.recurrent_s) for i in self.s_log_bin[1]]
+        
+        return x, y
         
 if __name__ == "__main__":
     
     L = 64
-    
     
     system = System(L)
     start = timer()
@@ -288,4 +307,9 @@ if __name__ == "__main__":
     fig7, ax7 = plt.subplots()
     ax7.loglog(range(int(min(systemiterator.recurrent_s)), int(max(systemiterator.recurrent_s))), systemiterator.s_prob_dist)
     ax7.grid()
+    
+    fig8, ax8 = plt.subplots()
+    ax8.loglog(systemiterator.s_prob_dist_log_bin[0], systemiterator.s_prob_dist_log_bin[1])
+    ax8.grid()
+    
     plt.show()
