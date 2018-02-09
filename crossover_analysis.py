@@ -1,55 +1,90 @@
 # -*- coding: utf-8 -*-
 import oslo as oslo
-from scipy import stats
 import numpy as np
 import matplotlib.pyplot as plt
 
-#N = 10000
-L = range(2,128,10)
+class Crossover_Analysis:
 
-# array of system objects for different sizes
-systems = [oslo.System(l) for l in L]
-# array of system iterators for each of the system objects
-systemiterators = [oslo.SystemIterator(s) for s in systems]
-t_c = [s.t_c for s in systems]
-t_c_theory = [s.t_c_theory for s in systemiterators]
-
-recurrent_mean_h = [s.recurrent_mean_h for s in systemiterators]
-sd_h = [s.sd_h for s in systemiterators]
-log_L = [np.log(i) for i in L]
-
-linregsoln = stats.linregress(log_L, [np.log(i) for i in sd_h])
-slope, intercept, r_value, p_value, std_err = linregsoln
-
-print("Slope: {}, Intercept: {}, R-Val: {}, S.D.: {}".format(slope, intercept, r_value, std_err))
-
-
-fig1, ax1 = plt.subplots()
-ax1.plot(L, t_c, label = 'Observed')
-ax1.plot(L, t_c_theory, label = 'Theory', color = 'red', linestyle = '--')
-ax1.set_xlabel('System Size, L')
-ax1.set_ylabel('Cross-over time, t_c')
-ax1.legend(loc='best')
-ax1.grid()
-
-fig2, ax2 = plt.subplots()
-ax2.plot(L, recurrent_mean_h)
-ax2.set_xlabel('System Size, L')
-ax2.set_ylabel('Recurrent System Average Height')
-ax2.grid()
-
-fig3, ax3 = plt.subplots()
-ax3.plot(L, sd_h, linestyle='', marker='.')
-ax3.set_xlabel('System Size, L')
-ax3.set_ylabel('Standard Deviation of Height')
-ax3.grid()
-
-fig4, ax4 = plt.subplots()
-ax4.plot(log_L, [np.log(i) for i in sd_h], linestyle='', marker='.')
-ax4.plot(log_L, [slope * i + intercept for i in log_L])
-ax4.set_xlabel('log(L)')
-ax4.set_ylabel('log(s.d.)')
-ax4.grid()
-
-
-plt.show()
+    def __init__(self, L, N):
+        
+        self.L = L
+        self.N = N
+        self.heights = []
+        self.processed_heights_list = []
+        self.processed_heights_scaled = []
+        self.N_scaled_list = []
+        self.t_c_list = []
+        self.t_c_theory_list = []
+        
+        for i, l in enumerate(self.L):
+            system = oslo.System(l)
+            system.iterate(self.N)
+            ph, ns, phs = self.processed_heights(system)
+            self.heights.append(system.heights)
+            self.processed_heights_list.append(ph)
+            self.N_scaled_list.append(ns)
+            self.processed_heights_scaled.append(phs)
+            if system.t_c == None:
+                raise ValueError('System L: {} has not reached cross-over in {} iterations.'.format(l, self.N))
+            else:
+                self.t_c_list.append(system.t_c)
+                self.t_c_theory_list.append(system.t_c_theory())
+        
+    def processed_heights(self, system):
+        
+        W = 25
+        
+        processed_heights = np.convolve(system.heights, np.ones((2 * W + 1,)) / (2 * W + 1), 
+                                           mode='same')
+        # remove the end of the temporally smoothed height for edge effects
+        processed_heights = processed_heights[:-W]
+        # define a scaled height history h/L
+        processed_heights_scaled = [a / system.L for a in processed_heights]
+        # define a scaled total iteration number N/L^2
+        N_scaled = [a / (system.L**2) for a in range(len(processed_heights))]
+        
+        return processed_heights, N_scaled, processed_heights_scaled
+        
+    def plot_heights(self):
+        
+        fig1, ax1 = plt.subplots()
+        ax1.grid()
+        fig2, ax2 = plt.subplots()
+        ax2.grid()
+        fig3, ax3 = plt.subplots()
+        ax3.grid()
+        fig4, ax4 = plt.subplots()
+        ax4.grid()
+        
+        for i, l in enumerate(self.L):
+            
+            ax1.plot(range(len(self.heights[i])), self.heights[i], label=l)
+            ax1.set_xlabel('t')
+            ax1.set_ylabel('h')
+            ax1.legend(loc='best')
+            
+            ax2.plot(range(len(self.processed_heights_list[i])), self.processed_heights_list[i], label=l)
+            ax2.set_xlabel('t')
+            ax2.set_ylabel('h')
+            ax2.legend(loc='best')
+            
+            ax3.plot(range(len(self.processed_heights_scaled[i])), self.processed_heights_scaled[i], label=l)
+            ax3.set_xlabel('t')
+            ax3.set_ylabel('h/L')
+            ax3.legend(loc='best')
+            
+            ax4.plot(self.N_scaled_list[i], self.processed_heights_scaled[i], label=l)
+            ax4.set_ylabel('h/L')
+            ax4.set_xlabel('t/L^2')
+            ax4.legend(loc='best')
+            ax4.set_xlim(0,5)
+    
+    def plot_t_c(self):
+        
+        fig1, ax1 = plt.subplots()
+        ax1.plot(self.L, self.t_c_list, label = 'Observed')
+        ax1.plot(self.L, self.t_c_theory_list, label = 'Theory', color = 'red', linestyle = '--')
+        ax1.set_xlabel('System Size, L')
+        ax1.set_ylabel('Cross-over time, t_c')
+        ax1.legend(loc='best')
+        ax1.grid()
