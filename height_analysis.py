@@ -1,40 +1,22 @@
 # -*- coding: utf-8 -*-
-from timeit import default_timer as timer
-import oslo as oslo
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy import stats
 
 class Height_Analysis:
     
-    def __init__(self, L, N, use_data=True):
+    def __init__(self, L, N, recurrent_h_data):
         
         self.L = L
         self.N = N
         
         self.log_L = [np.log(i) for i in self.L]
         
-        self.recurrent_h_data = []
+        self.recurrent_h_data = recurrent_h_data
         self.sd_h_data = []
         self.mean_h_data = []
         self.prob_dist_data = []
         
-        if use_data == True:
-            start = timer()
-            for l in self.L:
-                fname = 'data/height_data/height_data_{}_{}.npy'.format(l, self.N)
-                recurrent_h = (np.load(fname)).astype(int)
-                print('Dataset size for L={}: {}'.format(l, len(recurrent_h)))
-                # store temporary array in the permanent array
-                self.recurrent_h_data.append(recurrent_h)
-            end = timer()
-            print('Read time: {} s.'.format((end-start)))
-        else:
-            for l in self.L: 
-                system = oslo.System(l)
-                system.iterate(self.N)
-                self.recurrent_h_data.append(system.recurrent_h())
-    
         for i, l in enumerate(L):
             self.mean_h_data.append(self.mean(self.recurrent_h_data[i]))
     

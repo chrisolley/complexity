@@ -1,39 +1,24 @@
 # -*- coding: utf-8 -*-
-from timeit import default_timer as timer
-import oslo as oslo
 import logbin2018 as lb
 import numpy as np
 import matplotlib.pyplot as plt
 
 class Avalanche_Probability_Analysis:
     
-    def __init__(self, L, N, t_s, D, a, use_data=True):
+    def __init__(self, L, N, t_s, D, a, recurrent_s_data):
         
+        self.recurrent_s_data = recurrent_s_data
         self.L = L
         self.N = N
         self.t_s = t_s
         self.D = D
         self.a = a
-        self.recurrent_s_data = []
+        self.moments = []
+        self.moments_data = []
+        for i, l in enumerate(L):
+            self.moments.append(np.sum([a**2 for a in self.recurrent_s_data[i]]) / len(self.recurrent_s_data[i]))    
         
-        
-        if use_data == True:
-            start = timer()
-            for l in self.L:
-                fname = 'data/avalanche_data/avalanche_sizes_{}_{}.npy'.format(l, self.N)
-                recurrent_s = (np.load(fname)).astype(int)
-                print('Dataset size for L={}: {}'.format(l, len(recurrent_s)))
-                # store temporary array in the permanent array
-                self.recurrent_s_data.append(recurrent_s)
-            end = timer()
-            print('Read time: {} s.'.format((end-start)))
-        
-        else:
-            for l in self.L:
-                system = oslo.System(l)
-                system.iterate(self.N)
-                self.recurrent_s_data.append(system.recurrent_s())
-    
+
     def prob_binning(self, avalanche_data, scale, L):
         '''
         prob_binning: Carries out log binning for a set of avalanche size data.
@@ -97,3 +82,14 @@ class Avalanche_Probability_Analysis:
         
         ax1.legend(loc='best')
         ax1.grid()
+    
+    def plot_moments(self):
+    
+        fig1, ax1 = plt.subplots()
+        ax1.loglog(self.L, self.moments, label='k: {}'.format(1))
+        
+        ax1.legend(loc='best')
+        ax1.grid()
+        
+        
+        

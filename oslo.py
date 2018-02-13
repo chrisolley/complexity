@@ -8,7 +8,7 @@ class System:
     System class for the Oslo model system. 
     '''
     
-    def __init__(self, L, p=0.5): 
+    def __init__(self, L, p=0.5, animate=False): 
         
         '''
         Initialises an Oslo Model System
@@ -21,10 +21,9 @@ class System:
         
         self.L = L 
         self.p = p # probability of seting a threshold value of 1
+        self.animate = animate
         self.h = np.zeros(L + 1) # array to hold value of height at each site, height at L+1=0
         self.zth = np.zeros(L)
-        self.avalanche_sizes = []
-        self.heights = []
         self.count = 0 # counts number of iterations
         self.t_c = None
         
@@ -69,12 +68,22 @@ class System:
         for i in range(self.L): 
             self.zth[i] = np.random.choice([1, 2], p=[self.p, 1-self.p])
         
+        if self.animate == True:
+            fig, ax = plt.subplots()
+        
+        
         for n in range(N):
             
             self.drive()
             self.relax(n)
             self.heights[n] = self.h[0]
             self.count += 1
+            if self.animate == True:
+                ax.clear()
+                #ax.bar(range(self.L),self.h[:-1], width = 1.0)
+                ax.plot(range(self.L),self.h[:-1], marker='o', markerfacecolor='red')
+                #fig.canvas.draw()
+                plt.pause(0.01)
     
     
     def heights(self):
@@ -104,7 +113,7 @@ if __name__ == "__main__":
     
     L = 64
     
-    system = System(L)
+    system = System(L, animate=True)
     start = timer()
     system.iterate(10**4)
     end = timer()
