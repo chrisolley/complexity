@@ -3,7 +3,7 @@ In this report, the Oslo model is used to investigate the emergence of scale fre
 This report implemented the oslo model in two ways: 
 1) as an object oriented Python model 
 2) as a c++ model that is used for a significant speed up in simulation time. 
-It should be noted that the c++ model was fairly buggy and might only work after multiple attempts and restarting the kernel. Furthermore there may be some compatibility issues as the C++ model failed to run on certain systems, and was most effective when run using the ipython console. However, the Python model has no known bugs. 
+It should be noted that there may be some compatibility issues as the C++ model failed to run on certain systems, and was most effective when run using the ipython console. However, the Python model has no known issues. 
 
 The number of iterations run for in the report was usually 10^7, however this takes 2-3 mins using the c++ script and 10^6 took around 10s.
 However using the python model is much slower and would typically take around 2 hours to carry out all of the plots in main.py.
